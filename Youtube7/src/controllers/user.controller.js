@@ -298,7 +298,7 @@ const updateUserAvatar = asyncHandler(async(req,res)=>{
 
      return res
     .status(200)
-    .json(200, user, "avatar image updated successfully")
+    .json(200, user, "avatar image  updated successfully")
 })
 
 
