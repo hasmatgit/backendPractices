@@ -7,8 +7,9 @@ import mongoose from "mongoose"
 import jwt from "jsonwebtoken"
 
 
-// access and refresh token
-const genetateAccessAndRefreshTokens = async (userId) => {
+// access and refresh token Generator
+
+const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId)
         const accessToken = user.generateAccessToken()
@@ -26,6 +27,7 @@ const genetateAccessAndRefreshTokens = async (userId) => {
 
 
 
+// Register User
 
 const registerUser = asyncHandler(async (req, res) => {
     // get user details from frontend
@@ -48,7 +50,7 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "All fields are required")
     }
 
-    const existedUser = User.findOne({
+    const existedUser = await User.findOne({
         $or: [{ username }, { email }]
     })
 
@@ -95,11 +97,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 
 
-
-
-
-
-
+// Login User
 
 const loginUser = asyncHandler(async (req, res) => {
     // req body -> data
@@ -114,7 +112,7 @@ const loginUser = asyncHandler(async (req, res) => {
     const { username, email, password } = req.body
 
     // username or email
-    if (!username || !email) {
+    if (!username && !email) {
         throw new ApiError(400, "username or email is required")
     }
 
@@ -135,7 +133,7 @@ const loginUser = asyncHandler(async (req, res) => {
     }
 
     // access and refresh token
-    const { accessToken, refreshToken } = await genetateAccessAndRefreshTokens(user._id)
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id)
 
 
     // send cookie
@@ -168,6 +166,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
 
 //Log out , using clear accessToken & refreshToken
+
 const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user_id,
@@ -193,7 +192,10 @@ const logoutUser = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, {}, "User logged Out"))
 })
 
-//////////////////////////////////////////////////////
+
+
+// Refresh Token
+
 const refreshAccessToken = asyncHandler(async (req, res) => {
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
 
@@ -241,7 +243,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 
 })
-////////////////////////////////////////////////////////////
+
+
+
+// Change Password
 
 const changeCurrentPassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword } = req.body
@@ -261,11 +266,18 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, {}, "Password changed succesfuly"))
 })
 
+
+
+// Get Current User
+
 const getCurrentUser = asyncHandler(async (req, res) => {
     return res
         .status(200)
         .json(200, req.user, "current user featched successfully")
 })
+
+
+// Update Account Details
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
     const { fullname, email } = req.body
@@ -290,6 +302,10 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
         .status(200)
         .json(new ApiResponse(200, user, "Account details updated successfully"))
 })
+
+
+
+// Update Avatar & Cover Image
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
     const avatarLocalPath = req.file?.path
@@ -319,6 +335,8 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 })
 
 
+// Update Cover Image
+
 const updateUserCoverImage = asyncHandler(async (req, res) => {
     const coverImageLocalPath = req.file?.path
 
@@ -347,6 +365,10 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
 
 
 })
+
+
+
+// Channel Profile (with subscribers count)
 
 const getUserChannelProfile = asyncHandler(async (req, res) => {
     const { username } = req.params
@@ -416,6 +438,10 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         new ApiResponse(200, channel[0], "User channel fetched successfully ")
     )
 })
+
+
+
+// Watch History
 
 const getWatchHistory = asyncHandler(async (req, res) => {
     const user = await User.aggregate([
