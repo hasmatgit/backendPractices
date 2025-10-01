@@ -251,7 +251,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 const changeCurrentPassword = asyncHandler(async (req, res) => {
     const { oldPassword, newPassword } = req.body
 
-    const user = await User.findById(req.user?.id)
+    const user = await User.findById(req.user?._id)
     const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
 
     if (!isPasswordCorrect) {
@@ -377,7 +377,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         throw new ApiError(400, "username is missing")
     }
 
-    const channel = await User.aggregate([
+    const channel = await User.aggregate([ //aggregation pipeline
         {
             $match: {
                 username: username?.toLowerCase()
@@ -385,7 +385,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
             }
         },
         {
-            $lookup: {
+            $lookup: { //subscriber
                 from: "subscription",
                 localField: "_id",
                 foreignField: "channel",
@@ -393,7 +393,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
             }
         },
         {
-            $lookup: {
+            $lookup: { //subscribed
                 from: "subscription",
                 localField: "_id",
                 foreignField: "subscriber",
@@ -402,13 +402,13 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         },
         {
             $addFields: {
-                subscribersCount: {
+                subscribersCount: {  //subscrigers count
                     $size: "$subscribers"
                 },
-                channelsSubscribedToCount: {
+                channelsSubscribedToCount: { //subscribed count
                     $size: "$subscribedTo"
                 },
-                isSubscribed: {
+                isSubscribed: {  // show if subscribed->subscribed , not subscribed-> Subscribe
                     $cond: {
                         if: { $in: [req.user?._id, "$subscribers.subscriber"] },
                         then: true,
@@ -418,7 +418,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
             }
         },
         {
-            $project: {
+            $project: { //selected, pipeline
                 fullname: 1,
                 username: 1,
                 subscribersCount: 1,
@@ -443,7 +443,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 
 // Watch History
 
-const getWatchHistory = asyncHandler(async (req, res) => {
+const getWatchHistory = asyncHandler(async(req, res) => {
     const user = await User.aggregate([
         {
             $match: {
@@ -463,31 +463,37 @@ const getWatchHistory = asyncHandler(async (req, res) => {
                             localField: "owner",
                             foreignField: "_id",
                             as: "owner",
-                        },
-                        pipeline: [
-                            {
-                                $project: {
-                                    fullname: 1,
-                                    username: 1,
-                                    avatar: 1
-                                }
-                            },
-                            {
-                                $addFields: {
-                                    owner: {
-                                        $first: "$owner"
+                            pipeline: [
+                                {
+                                    $project: {
+                                        fullName: 1,
+                                        username: 1,
+                                        avatar: 1
                                     }
                                 }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields:{
+                            owner:{
+                                $first: "$owner"
                             }
-                        ]
+                        }
                     }
                 ]
             }
         }
     ])
 
-    return res.status(200).json(
-        new ApiError(200, user[0].getWatchHistory, "watch history fetched successfully")
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            user[0].watchHistory,
+            "Watch history fetched successfully"
+        )
     )
 })
 
