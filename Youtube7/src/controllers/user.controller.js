@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import mongoose from "mongoose"
+import jwt from "jsonwebtoken"
 
 
 // access and refresh token
@@ -22,6 +23,9 @@ const genetateAccessAndRefreshTokens = async (userId) => {
         throw new ApiError(500, "smtng w wrng whil gentate ref and accs tokn")
     }
 }
+
+
+
 
 const registerUser = asyncHandler(async (req, res) => {
     // get user details from frontend
@@ -89,6 +93,14 @@ const registerUser = asyncHandler(async (req, res) => {
 
 })
 
+
+
+
+
+
+
+
+
 const loginUser = asyncHandler(async (req, res) => {
     // req body -> data
     // username or email
@@ -152,6 +164,10 @@ const loginUser = asyncHandler(async (req, res) => {
 
 })
 
+
+
+
+//Log out , using clear accessToken & refreshToken
 const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user_id,
